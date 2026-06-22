@@ -3,6 +3,14 @@ name: Deploy to EC2
 # Auto-deploys on every push to main. First-time server setup (clone repo, create
 # .env, pm2 start) is done manually once — see DEPLOY.md. This workflow handles
 # every deploy after that.
+#
+# Required GitHub repo secrets (Settings → Secrets and variables → Actions):
+#   SSH_HOST         - EC2 public IP / hostname
+#   SSH_PORT         - SSH port (usually 22)
+#   SSH_USERNAME     - SSH user (e.g. ubuntu)
+#   SSH_PRIVATE_KEY  - the private key (full contents of your .pem)
+#
+# NOTE: set APP_DIR below to the folder where the repo is cloned on the server.
 
 on:
   push:
@@ -16,13 +24,14 @@ jobs:
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          port: 22
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
           script: |
             set -e
-            cd ${{ secrets.APP_DIR }}
+            APP_DIR=/var/www/genz-telangana   # <-- change if you cloned elsewhere
+            cd "$APP_DIR"
             git pull origin main
             npm install --omit=dev
             pm2 restart gen-z-conclave || pm2 start ecosystem.config.cjs
