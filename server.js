@@ -93,7 +93,12 @@ app.post('/api/submit', submitLimiter, async (req, res) => {
     } catch (sendErr) {
       markFailed(leadId, sendErr.message);
       console.error(`[send failed] #${leadId}`, sendErr);
-      return res.status(502).json({ ok: false, error: 'Saved, but WhatsApp sending failed. Please try again.' });
+      // NOTE: return 200 (not 5xx) so Cloudflare doesn't replace the body with its
+      // own gateway error page — this lets the form show a real message.
+      return res.status(200).json({
+        ok: false,
+        error: 'We saved your details, but the WhatsApp message could not be sent right now. Please contact the organizers.',
+      });
     }
   } catch (err) {
     console.error('[submit error]', err);
