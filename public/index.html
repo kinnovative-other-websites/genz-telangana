@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NAMO Gen Z Conclave — Register</title>
+  <style>
+    :root {
+      --saffron: #ea580c; --green: #16a34a; --navy: #0f2350;
+      --ink: #0f172a; --muted: #64748b; --line: #e6e8ee; --field: #fff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; display: grid; place-items: center;
+      font-family: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+      background:
+        radial-gradient(1000px 460px at 8% -8%, rgba(234,88,12,.10), transparent 60%),
+        radial-gradient(1000px 460px at 108% 108%, rgba(22,163,74,.10), transparent 60%),
+        #eef1f6;
+      padding: 32px 18px; color: var(--ink);
+    }
+    .card {
+      background: #fff; width: 100%; max-width: 600px; border-radius: 22px;
+      box-shadow: 0 22px 60px rgba(15,35,80,.16); overflow: hidden; border: 1px solid #eef1f6;
+      animation: fadeUp .5s ease both;
+    }
+    .banner-wrap { position: relative; }
+    .banner { display: block; width: 100%; height: auto; }
+    .tricolor { height: 6px; background: linear-gradient(90deg, var(--saffron) 0 33%, #fff 33% 66%, var(--green) 66% 100%); }
+
+    .body { padding: 32px 40px 36px; }
+    .head { text-align: center; margin-bottom: 10px; }
+    .head h1 { margin: 0; font-size: 24px; letter-spacing: .2px; color: var(--navy); }
+    .head p { margin: 6px 0 0; font-size: 15px; color: var(--muted); }
+
+    .field { margin-top: 22px; }
+    .field:first-child { margin-top: 0; }
+    label { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; margin-bottom: 9px; color: var(--navy); }
+    label svg { width: 18px; height: 18px; color: var(--saffron); flex: none; }
+    label .req { color: var(--saffron); margin-left: -3px; }
+
+    .control { position: relative; }
+    input {
+      width: 100%; padding: 15px 16px; border: 1.5px solid var(--line); border-radius: 13px;
+      font-size: 16px; outline: none; background: var(--field); color: var(--ink);
+      transition: border-color .15s, box-shadow .15s;
+    }
+    input::placeholder { color: #9aa3b2; }
+    input:focus { border-color: var(--saffron); box-shadow: 0 0 0 4px rgba(234,88,12,.13); }
+
+    .phone-row { display: flex; }
+    .phone-row .cc {
+      display: flex; align-items: center; padding: 0 16px; border: 1.5px solid var(--line);
+      border-right: 0; border-radius: 13px 0 0 13px; background: #f7f8fb; font-weight: 700; color: #475569; font-size: 16px;
+    }
+    .phone-row input { border-radius: 0 13px 13px 0; }
+    .phone-row:focus-within .cc { border-color: var(--saffron); }
+
+    .select .chev {
+      position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+      width: 18px; height: 18px; color: var(--muted); pointer-events: none; transition: transform .15s;
+    }
+    .select.open .chev { transform: translateY(-50%) rotate(180deg); }
+    .select-input { cursor: pointer; padding-right: 42px; }
+    .options {
+      position: absolute; z-index: 30; top: calc(100% + 6px); left: 0; right: 0;
+      background: #fff; border: 1.5px solid var(--line); border-radius: 13px;
+      max-height: 280px; overflow-y: auto; box-shadow: 0 16px 40px rgba(15,35,80,.18); display: none;
+    }
+    .options.open { display: block; animation: pop .12s ease both; }
+    .option { padding: 13px 16px; font-size: 15.5px; cursor: pointer; border-bottom: 1px solid #f3f4f8; }
+    .option:last-child { border-bottom: 0; }
+    .option:hover, .option.active { background: #fff7ed; color: var(--saffron); font-weight: 600; }
+    .option.empty { color: #9aa3b2; cursor: default; font-weight: 400; }
+
+    button.submit {
+      width: 100%; margin-top: 30px; padding: 17px; border: 0; border-radius: 13px;
+      background: linear-gradient(180deg, #1bbd5d, var(--green)); color: #fff;
+      font-size: 17px; font-weight: 700; cursor: pointer; letter-spacing: .2px;
+      box-shadow: 0 12px 26px rgba(22,163,74,.30); position: relative; overflow: hidden;
+      transition: transform .08s, box-shadow .15s;
+    }
+    button.submit::after {
+      content: ''; position: absolute; top: 0; left: -120%; width: 60%; height: 100%;
+      background: linear-gradient(100deg, transparent, rgba(255,255,255,.45), transparent); transform: skewX(-20deg);
+    }
+    button.submit:hover::after { animation: shine .9s ease; }
+    button.submit:hover { box-shadow: 0 14px 30px rgba(22,163,74,.40); }
+    button.submit:active { transform: translateY(1px); }
+    button.submit:disabled { opacity: .65; cursor: not-allowed; box-shadow: none; }
+
+    .msg { margin-top: 16px; font-size: 15px; text-align: center; min-height: 22px; font-weight: 600; }
+    .ok { color: #15803d; } .err { color: #b91c1c; }
+    .footnote { margin-top: 18px; text-align: center; font-size: 12.5px; color: #9aa3b2; letter-spacing: .3px; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+    @keyframes pop    { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+    @keyframes shine  { to { left: 140%; } }
+
+    @media (max-width: 560px) {
+      .body { padding: 26px 22px 28px; }
+      .head h1 { font-size: 21px; }
+    }
+  </style>
+</head>
+<body>
+  <form class="card" id="form" autocomplete="off">
+    <div class="banner-wrap">
+      <img class="banner" src="/banner.jpeg" alt="NAMO Gen Z Conclave" onerror="this.style.display='none'" />
+      <div class="tricolor"></div>
+    </div>
+
+    <div class="body">
+      <div class="field">
+        <label for="name">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+          Full Name <span class="req">*</span>
+        </label>
+        <div class="control">
+          <input id="name" name="name" type="text" placeholder="As per official records" required maxlength="60" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="district">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+          District <span class="req">*</span>
+        </label>
+        <div class="control select" id="select">
+          <input id="district" class="select-input" type="text" readonly placeholder="Select your district" required />
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          <div class="options" id="options"></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="mobile">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L20 13l1 4v2a1 1 0 0 1-1 1A16 16 0 0 1 4 5a1 1 0 0 1 1-1Z"/></svg>
+          Phone Number <span class="req">*</span>
+        </label>
+        <div class="phone-row">
+          <span class="cc">+91</span>
+          <input id="mobile" name="mobile" type="tel" inputmode="numeric"
+                 placeholder="10-digit mobile number" required
+                 pattern="[6-9][0-9]{9}" maxlength="10"
+                 title="Enter a valid 10-digit mobile number" />
+        </div>
+      </div>
+
+      <button type="submit" class="submit" id="btn">Submit Registration →</button>
+      <div class="msg" id="msg"></div>
+      <div class="footnote">Bharatiya Janata Yuva Morcha (BJYM)</div>
+    </div>
+  </form>
+
+  <script>
+    const DISTRICTS = [
+      "Adilabad","Bhadradri Kothagudem","Hanumakonda","Hyderabad","Jagtial","Jangaon",
+      "Jayashankar Bhupalpally","Jogulamba Gadwal","Kamareddy","Karimnagar","Khammam",
+      "Komaram Bheem Asifabad","Mahabubabad","Mahabubnagar","Mancherial","Medak",
+      "Medchal–Malkajgiri","Mulugu","Nagarkurnool","Nalgonda","Narayanpet","Nirmal",
+      "Nizamabad","Peddapalli","Rajanna Sircilla","Rangareddy","Sangareddy","Siddipet",
+      "Suryapet","Vikarabad","Wanaparthy","Warangal","Yadadri Bhuvanagiri"
+    ];
+
+    const wrap = document.getElementById('select');
+    const districtInput = document.getElementById('district');
+    const optionsEl = document.getElementById('options');
+    let selected = '';
+
+    function renderOptions(filter = '') {
+      const f = filter.trim().toLowerCase();
+      const list = DISTRICTS.filter(d => d.toLowerCase().includes(f));
+      optionsEl.innerHTML = '';
+      if (list.length === 0) {
+        const e = document.createElement('div');
+        e.className = 'option empty'; e.textContent = 'No district found';
+        optionsEl.appendChild(e); return;
+      }
+      list.forEach(d => {
+        const o = document.createElement('div');
+        o.className = 'option' + (d === selected ? ' active' : '');
+        o.textContent = d;
+        o.addEventListener('mousedown', (e) => { e.preventDefault(); selected = d; districtInput.value = d; closeOptions(); });
+        optionsEl.appendChild(o);
+      });
+    }
+    function openOptions() {
+      renderOptions(''); optionsEl.classList.add('open'); wrap.classList.add('open');
+      districtInput.removeAttribute('readonly'); districtInput.value = '';
+    }
+    function closeOptions() {
+      optionsEl.classList.remove('open'); wrap.classList.remove('open');
+      districtInput.value = selected; districtInput.setAttribute('readonly','');
+    }
+    districtInput.addEventListener('focus', openOptions);
+    districtInput.addEventListener('click', () => { if (!optionsEl.classList.contains('open')) openOptions(); });
+    districtInput.addEventListener('input', () => { optionsEl.classList.add('open'); renderOptions(districtInput.value); });
+    document.addEventListener('click', (e) => { if (!e.target.closest('.select')) closeOptions(); });
+
+    const form = document.getElementById('form');
+    const btn = document.getElementById('btn');
+    const msg = document.getElementById('msg');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      msg.textContent = ''; msg.className = 'msg';
+      if (!selected) { msg.textContent = '⚠️ Please select your district.'; msg.className = 'msg err'; return; }
+
+      btn.disabled = true; btn.textContent = 'Sending…';
+      const payload = { name: form.name.value.trim(), mobile: form.mobile.value.trim(), district: selected };
+      try {
+        const res = await fetch('/api/submit', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (res.ok && data.ok) {
+          msg.textContent = '✅ Registered! Check your WhatsApp.'; msg.className = 'msg ok';
+          form.reset(); selected = ''; districtInput.value = '';
+        } else {
+          msg.textContent = '⚠️ ' + (data.error || 'Something went wrong.'); msg.className = 'msg err';
+        }
+      } catch (err) {
+        msg.textContent = '⚠️ Network error. Please try again.'; msg.className = 'msg err';
+      } finally {
+        btn.disabled = false; btn.textContent = 'Submit Registration →';
+      }
+    });
+  </script>
+</body>
+</html>

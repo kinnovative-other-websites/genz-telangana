@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Registrations — NAMO Gen Z Conclave</title>
+  <style>
+    :root { --saffron:#ea580c; --green:#16a34a; --navy:#0f2350; --ink:#0f172a; --muted:#64748b; --line:#e6e8ee; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif; background:#f1f5f9; color:var(--ink); }
+    header { background:var(--navy); color:#fff; padding:18px 24px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+    header h1 { font-size:18px; margin:0; flex:1; }
+    .wrap { max-width:1100px; margin:0 auto; padding:20px 16px 60px; }
+
+    .stats { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:18px; }
+    .stat { background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px 18px; min-width:120px; }
+    .stat .n { font-size:24px; font-weight:800; }
+    .stat .l { font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
+    .stat.sent .n { color:var(--green); } .stat.failed .n { color:#b91c1c; } .stat.pending .n { color:#b45309; }
+
+    .toolbar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; align-items:center; }
+    input[type=search] { flex:1; min-width:200px; padding:11px 14px; border:1.5px solid var(--line); border-radius:10px; font-size:14px; outline:none; }
+    input[type=search]:focus { border-color:var(--saffron); }
+    button { padding:11px 16px; border:0; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; }
+    .btn-csv { background:var(--green); color:#fff; }
+    .btn-refresh { background:#fff; border:1.5px solid var(--line); color:var(--ink); }
+
+    table { width:100%; border-collapse:collapse; background:#fff; border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+    th, td { text-align:left; padding:11px 14px; font-size:14px; border-bottom:1px solid #eef1f6; }
+    th { background:#f8fafc; color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.5px; }
+    tr:last-child td { border-bottom:0; }
+    tr:hover td { background:#fafbff; }
+    .badge { padding:3px 9px; border-radius:999px; font-size:12px; font-weight:700; }
+    .b-sent { background:#dcfce7; color:#15803d; } .b-failed { background:#fee2e2; color:#b91c1c; } .b-pending { background:#fef3c7; color:#b45309; }
+
+    .gate { max-width:360px; margin:80px auto; background:#fff; border:1px solid var(--line); border-radius:16px; padding:28px; text-align:center; }
+    .gate input { width:100%; padding:12px 14px; border:1.5px solid var(--line); border-radius:10px; font-size:15px; margin:14px 0; }
+    .gate button { width:100%; background:var(--navy); color:#fff; }
+    .muted { color:var(--muted); font-size:13px; }
+    .empty { text-align:center; padding:40px; color:var(--muted); }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <script>
+    // Read the key from the URL hash (kept out of server logs). Supports
+    // /admin/#/v2?data=KEY , /admin/#key=KEY , or a plain /admin/#KEY
+    function keyFromHash() {
+      const raw = decodeURIComponent(location.hash.slice(1));
+      const m = raw.match(/(?:data|key)=([^&]+)/);
+      if (m) return m[1];
+      const tail = raw.split('=').pop();
+      return /[?\/]/.test(tail) ? '' : tail;
+    }
+
+    let KEY = keyFromHash();
+    let DATA = [];
+    const app = document.getElementById('app');
+    const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+    async function load() {
+      const res = await fetch('/api/registrations', { headers: { 'x-admin-key': KEY } });
+      if (res.status === 401) { KEY = ''; renderGate('Wrong key. Try again.'); return; }
+      const json = await res.json();
+      DATA = json.rows || [];
+      renderDashboard();
+    }
+
+    function renderGate(msg) {
+      app.innerHTML = `
+        <div class="gate">
+          <h2>Admin Access</h2>
+          <p class="muted">Enter the admin key to view registrations.</p>
+          ${msg ? `<p style="color:#b91c1c;font-size:13px">${esc(msg)}</p>` : ''}
+          <input id="k" type="password" placeholder="Admin key" />
+          <button onclick="submitKey()">View Registrations</button>
+        </div>`;
+      document.getElementById('k').addEventListener('keydown', e => { if (e.key==='Enter') submitKey(); });
+    }
+    window.submitKey = () => { KEY = document.getElementById('k').value.trim(); if (KEY) load(); };
+
+    function renderDashboard() {
+      const total = DATA.length;
+      const by = (s) => DATA.filter(r => r.status === s).length;
+      app.innerHTML = `
+        <header>
+          <h1>NAMO Gen Z Conclave — Registrations</h1>
+          <span class="muted" style="color:#cbd5e1">Auto-counts below</span>
+        </header>
+        <div class="wrap">
+          <div class="stats">
+            <div class="stat"><div class="n">${total}</div><div class="l">Total</div></div>
+            <div class="stat sent"><div class="n">${by('sent')}</div><div class="l">Sent</div></div>
+            <div class="stat failed"><div class="n">${by('failed')}</div><div class="l">Failed</div></div>
+            <div class="stat pending"><div class="n">${by('pending')}</div><div class="l">Pending</div></div>
+          </div>
+          <div class="toolbar">
+            <input id="search" type="search" placeholder="Search name, mobile, or district…" />
+            <button class="btn-refresh" onclick="load()">↻ Refresh</button>
+            <button class="btn-csv" onclick="downloadCSV()">⬇ Download CSV</button>
+          </div>
+          <div id="tableArea"></div>
+        </div>`;
+      document.getElementById('search').addEventListener('input', e => renderTable(e.target.value));
+      renderTable('');
+    }
+
+    function renderTable(filter) {
+      const f = filter.trim().toLowerCase();
+      const rows = DATA.filter(r => !f || `${r.name} ${r.mobile} ${r.district}`.toLowerCase().includes(f));
+      const area = document.getElementById('tableArea');
+      if (rows.length === 0) { area.innerHTML = `<div class="empty">No registrations${f ? ' match your search' : ' yet'}.</div>`; return; }
+      area.innerHTML = `
+        <table>
+          <thead><tr><th>#</th><th>Name</th><th>Mobile</th><th>District</th><th>Status</th><th>Registered</th></tr></thead>
+          <tbody>${rows.map(r => `
+            <tr>
+              <td>${r.id}</td>
+              <td>${esc(r.name)}</td>
+              <td>${esc(r.mobile)}</td>
+              <td>${esc(r.district)}</td>
+              <td><span class="badge b-${r.status}">${esc(r.status)}</span></td>
+              <td>${esc(r.created_at)}</td>
+            </tr>`).join('')}</tbody>
+        </table>`;
+    }
+
+    window.downloadCSV = () => {
+      const head = ['id','name','mobile','district','status','created_at'];
+      const cell = (v) => `"${String(v ?? '').replace(/"/g,'""')}"`;
+      const csv = [head.join(','), ...DATA.map(r => head.map(h => cell(r[h])).join(','))].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'registrations.csv';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    };
+
+    // Boot
+    if (KEY) load(); else renderGate();
+  </script>
+</body>
+</html>
