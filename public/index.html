@@ -93,8 +93,40 @@
     .ok { color: #15803d; } .err { color: #b91c1c; }
     .footnote { margin-top: 18px; text-align: center; font-size: 12.5px; color: #9aa3b2; letter-spacing: .3px; }
 
+    /* success modal */
+    .overlay {
+      position: fixed; inset: 0; z-index: 100; display: none;
+      align-items: center; justify-content: center; padding: 22px;
+      background: rgba(15,35,80,.45); backdrop-filter: blur(4px);
+    }
+    .overlay.open { display: flex; animation: fade .2s ease both; }
+    .modal {
+      background: #fff; width: 100%; max-width: 420px; border-radius: 22px;
+      overflow: hidden; box-shadow: 0 30px 80px rgba(15,35,80,.35);
+      animation: modalIn .35s cubic-bezier(.2,.9,.3,1.4) both; text-align: center;
+    }
+    .modal .tricolor { height: 6px; }
+    .modal-body { padding: 34px 30px 32px; }
+    .check {
+      width: 76px; height: 76px; margin: 0 auto 18px; border-radius: 50%;
+      display: grid; place-items: center;
+      background: linear-gradient(180deg, #1bbd5d, var(--green));
+      box-shadow: 0 12px 26px rgba(22,163,74,.35);
+      animation: pop2 .4s ease .15s both;
+    }
+    .check svg { width: 40px; height: 40px; color: #fff; stroke-width: 3; }
+    .check svg path { stroke-dasharray: 30; stroke-dashoffset: 30; animation: draw .4s ease .35s forwards; }
+    .modal h2 { margin: 0 0 10px; font-size: 22px; color: var(--navy); }
+    .modal p { margin: 0; font-size: 15.5px; line-height: 1.55; color: var(--muted); }
+    .modal p b { color: var(--green); }
+    .reload-note { margin-top: 18px; font-size: 13px; color: #9aa3b2; }
+
     @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
     @keyframes pop    { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+    @keyframes pop2   { from { opacity: 0; transform: scale(.5); } to { opacity: 1; transform: scale(1); } }
+    @keyframes fade   { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes modalIn{ from { opacity: 0; transform: translateY(24px) scale(.96); } to { opacity: 1; transform: none; } }
+    @keyframes draw   { to { stroke-dashoffset: 0; } }
     @keyframes shine  { to { left: 140%; } }
 
     @media (max-width: 560px) {
@@ -152,6 +184,20 @@
       <div class="footnote">Bharatiya Janata Yuva Morcha (BJYM)</div>
     </div>
   </form>
+
+  <div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal">
+      <div class="tricolor"></div>
+      <div class="modal-body">
+        <div class="check">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+        </div>
+        <h2 id="modalTitle">Thank You for Registering!</h2>
+        <p>Please check your <b>WhatsApp</b> for your E-Pass.</p>
+        <div class="reload-note">Refreshing in a moment…</div>
+      </div>
+    </div>
+  </div>
 
   <script>
     const DISTRICTS = [
@@ -215,10 +261,9 @@
         });
         const data = await res.json();
         if (res.ok && data.ok) {
-          msg.textContent = '✅ Thank you for registering. Please check your WhatsApp for your E-Pass.';
-          msg.className = 'msg ok';
           form.reset(); selected = ''; districtInput.value = '';
           btn.disabled = true; btn.textContent = 'Submitted ✓';
+          document.getElementById('overlay').classList.add('open');
           setTimeout(() => window.location.reload(), 3000);
           return;
         } else {
