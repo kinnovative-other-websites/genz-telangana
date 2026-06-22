@@ -215,8 +215,12 @@
         });
         const data = await res.json();
         if (res.ok && data.ok) {
-          msg.textContent = '✅ Registered! Check your WhatsApp.'; msg.className = 'msg ok';
+          msg.textContent = '✅ Thank you for registering. Please check your WhatsApp for your E-Pass.';
+          msg.className = 'msg ok';
           form.reset(); selected = ''; districtInput.value = '';
+          btn.disabled = true; btn.textContent = 'Submitted ✓';
+          setTimeout(() => window.location.reload(), 3000);
+          return;
         } else {
           msg.textContent = '⚠️ ' + (data.error || 'Something went wrong.'); msg.className = 'msg err';
         }
