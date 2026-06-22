@@ -30,6 +30,7 @@ const insertStmt = db.prepare(
 const markSentStmt = db.prepare(`UPDATE registrations SET status='sent', image_url=?, error=NULL WHERE id=?`);
 const markFailedStmt = db.prepare(`UPDATE registrations SET status='failed', error=? WHERE id=?`);
 const allStmt = db.prepare(`SELECT * FROM registrations ORDER BY id DESC`);
+const latestByMobileStmt = db.prepare(`SELECT * FROM registrations WHERE mobile=? ORDER BY id DESC LIMIT 1`);
 
 export function saveLead({ name, mobile, district }) {
   const info = insertStmt.run(name, mobile, district);
@@ -38,5 +39,6 @@ export function saveLead({ name, mobile, district }) {
 export function markSent(id, imageUrl) { markSentStmt.run(imageUrl, id); }
 export function markFailed(id, errorMsg) { markFailedStmt.run(String(errorMsg).slice(0, 500), id); }
 export function getAllRegistrations() { return allStmt.all(); }
+export function getLatestByMobile(mobile) { return latestByMobileStmt.get(mobile); }
 
 export default db;

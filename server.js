@@ -3,10 +3,11 @@ import express from 'express';
 import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import rateLimit from 'express-rate-limit';
 
 import { generatePassImage } from './src/image.js';
 import { sendWhatsAppTemplate } from './src/smartping.js';
-import { saveLead, markSent, markFailed, getAllRegistrations } from './src/db.js';
+import { saveLead, markSent, markFailed, getAllRegistrations, getLatestByMobile } from './src/db.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -14,8 +15,25 @@ const PORT = process.env.PORT || 3000;
 // Strip any trailing slash so image URLs don't end up with a double slash.
 const PUBLIC_BASE_URL = (process.env.PUBLIC_BASE_URL || `http://localhost:${PORT}`).replace(/\/+$/, '');
 
+// Behind Nginx + Cloudflare — trust the proxy chain so we can read the real client IP.
+app.set('trust proxy', true);
+
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Rate limit submissions per client IP. Generous on purpose: many genuine users
+// at an event share one network (NAT), so this stops bot floods without blocking
+// real attendees. The per-mobile duplicate check below is the main cost guard.
+const submitLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,           // 10 minutes
+  max: 20,                            // max 20 submissions per IP per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Cloudflare always sets CF-Connecting-IP to the real client IP (not spoofable via CF).
+  keyGenerator: (req) => req.headers['cf-connecting-ip'] || req.ip,
+  validate: false,
+  message: { ok: false, error: 'Too many attempts from your network. Please try again in a few minutes.' },
+});
 
 // Telangana — 33 districts (keep in sync with public/index.html)
 const TELANGANA_DISTRICTS = new Set([
@@ -32,7 +50,7 @@ const isValidName = (s) => typeof s === 'string' && s.trim().length >= 2 && s.tr
 const isValidMobile = (s) => typeof s === 'string' && /^[6-9]\d{9}$/.test(s.trim());
 const isValidDistrict = (s) => typeof s === 'string' && TELANGANA_DISTRICTS.has(s.trim());
 
-app.post('/api/submit', async (req, res) => {
+app.post('/api/submit', submitLimiter, async (req, res) => {
   try {
     const name = (req.body.name || '').trim();
     const mobile = (req.body.mobile || '').trim();
@@ -46,6 +64,16 @@ app.post('/api/submit', async (req, res) => {
     }
     if (!isValidDistrict(district)) {
       return res.status(400).json({ ok: false, error: 'Please select a valid district.' });
+    }
+
+    // Duplicate guard: if this number already received the pass, don't send again
+    // (saves WhatsApp cost). A previous *failed* attempt is allowed to retry.
+    const existing = getLatestByMobile(mobile);
+    if (existing && existing.status === 'sent') {
+      return res.status(409).json({
+        ok: false,
+        error: 'This number is already registered. Please check your WhatsApp for the pass.',
+      });
     }
 
     // 1) Save the lead first (status 'pending') so it's never lost, even if sending fails
